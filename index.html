@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Atelier BD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#141417;--bar:#1d1d22;--panel:#24242b;--line:#36363f;--txt:#f3efe6;--mut:#9d9a93;--acc:#ff5a36;--acc2:#ffcf3f}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--ink);color:var(--txt);font:14px/1.3 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+header{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bar);border-bottom:1px solid var(--line)}
+.brand{font-family:Bangers,Impact,sans-serif;font-size:22px;letter-spacing:1px;color:var(--acc2);background:var(--acc);padding:2px 8px 0;border-radius:6px;transform:rotate(-3deg)}
+#title{flex:1;min-width:0;background:transparent;border:1px solid transparent;border-radius:6px;color:var(--txt);font:600 16px/1 inherit;padding:6px}
+#title:focus{outline:none;border-color:var(--line);background:var(--panel)}
+.ib{width:36px;height:36px;border-radius:8px;display:grid;place-items:center}
+.ib:hover{background:var(--panel)}.ib:disabled{opacity:.3}
+.ib svg,.tb svg{width:20px;height:20px}
+#saveState{font-size:11px;color:var(--mut);white-space:nowrap}
+#pages{display:flex;gap:6px;padding:6px 10px;overflow-x:auto;background:var(--bar);border-bottom:1px solid var(--line);scrollbar-width:none}
+.chip{min-width:34px;height:30px;padding:0 10px;border-radius:15px;background:var(--panel);color:var(--mut);font-weight:600;flex:none}
+.chip.on{background:var(--txt);color:var(--ink)}
+.chip.add{color:var(--acc2)}
+#stage{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;padding:10px;background:radial-gradient(circle at 1px 1px,#2a2a31 1px,transparent 0) 0 0/16px 16px}
+#page{width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none;display:block}
+#banner[hidden]{display:none}
+#banner{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:var(--acc);color:#fff;padding:8px 8px 8px 14px;border-radius:20px;font-weight:600;display:flex;gap:10px;align-items:center;box-shadow:0 6px 20px #0007;white-space:nowrap;z-index:5}
+#banner button{background:#0003;border-radius:14px;padding:4px 10px}
+#tools{background:var(--bar);border-top:1px solid var(--line);padding:8px 8px 6px}
+.row{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;align-items:stretch}
+.row+.row{margin-top:6px}
+.tb{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:60px;padding:6px 6px 5px;border-radius:10px;font-size:11px;color:var(--txt)}
+.tb:hover{background:var(--panel)}
+.tb.on{background:var(--acc);color:#fff}
+.tb.danger{color:#ff8a78}
+.tb.ok{color:var(--acc2)}
+.seg{display:flex;background:var(--panel);border-radius:10px;padding:3px;gap:2px;flex:none}
+.seg button{padding:7px 10px;border-radius:8px;font-size:12px;color:var(--mut);white-space:nowrap}
+.seg button.on{background:var(--txt);color:var(--ink);font-weight:600}
+textarea#btext{width:100%;min-height:52px;max-height:120px;resize:vertical;background:#fff;color:#111;border:0;border-radius:10px;padding:8px 10px;font:700 16px/1.25 "Comic Neue",system-ui,sans-serif}
+.hint{font-size:11.5px;color:var(--mut);padding:2px 4px 0}
+input[type=range]{accent-color:var(--acc);width:130px}
+.zoomwrap{display:flex;align-items:center;gap:6px;padding:0 6px;font-size:11px;color:var(--mut)}
+#tray{background:var(--ink);border-top:1px solid var(--line);padding:6px 8px 8px;padding-bottom:max(8px,env(safe-area-inset-bottom))}
+#tray .head{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--mut);margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em}
+#tray .head button{color:var(--acc2);font-weight:700;text-transform:none;letter-spacing:0;font-size:12.5px}
+.thumbs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;min-height:58px}
+.th{position:relative;flex:none;width:58px;height:58px;border-radius:8px;background:#000 center/cover no-repeat;border:2px solid transparent;touch-action:pan-x}
+.th.used::after{content:"";position:absolute;right:4px;bottom:4px;width:8px;height:8px;border-radius:50%;background:var(--acc2);box-shadow:0 0 0 2px #000}
+.th.pick{border-color:var(--acc)}
+.th .x{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#000;color:#fff;font-size:13px;line-height:20px;text-align:center;border:1px solid var(--line)}
+.empty{font-size:12px;color:var(--mut);padding:18px 4px}
+#ghost{position:fixed;left:0;top:0;width:86px;height:86px;border-radius:10px;background:#000 center/cover no-repeat;border:3px solid #fff;box-shadow:0 10px 30px #000a;pointer-events:none;opacity:.92;display:none;z-index:50;transform:translate(-50%,-50%)}
+#sheetWrap{position:fixed;inset:0;background:#0009;display:flex;align-items:flex-end;justify-content:center;z-index:40}
+#sheetWrap[hidden]{display:none}
+#sheet{background:var(--bar);width:100%;max-width:560px;border-radius:16px 16px 0 0;padding:14px 14px max(16px,env(safe-area-inset-bottom));max-height:85vh;overflow:auto}
+#sheet h3{margin:0 0 10px;font-size:15px}
+.list button{display:flex;width:100%;align-items:center;gap:12px;padding:12px;border-radius:10px;text-align:left;font-size:15px}
+.list button:hover{background:var(--panel)}
+.list button small{display:block;color:var(--mut);font-size:12px;margin-top:2px}
+.list button.danger{color:#ff8a78}
+.lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+.lgrid button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px;border-radius:10px;font-size:11.5px;color:var(--mut)}
+.lgrid button.on{background:var(--panel);color:var(--txt);outline:2px solid var(--acc)}
+.lgrid svg{width:66px;height:88px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,40px);opacity:0;background:var(--txt);color:var(--ink);padding:10px 16px;border-radius:20px;font-weight:600;transition:.25s;z-index:60;pointer-events:none;max-width:90vw;text-align:center}
+#toast.on{transform:translate(-50%,0);opacity:1}
+/* svg */
+.ph{font:600 22px system-ui,sans-serif;fill:#9a958a;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.phi{fill:none;stroke:#b4aea2;stroke-width:3;pointer-events:none}
+.pborder{fill:none;stroke:#111;stroke-width:5;pointer-events:none}
+.bub{cursor:grab}
+@media (min-width:900px){#tools .row{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand">BD</div>
+    <input id="title" value="Ma BD" aria-label="Titre de la BD" autocomplete="off">
+    <span id="saveState"></span>
+    <button class="ib" id="undo" title="Annuler" aria-label="Annuler"></button>
+    <button class="ib" id="redo" title="Rétablir" aria-label="Rétablir"></button>
+  </header>
+  <nav id="pages"></nav>
+  <main id="stage">
+    <svg id="page" viewBox="0 0 1000 1333" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+      <defs id="defs"></defs>
+      <rect x="0" y="0" width="1000" height="1333" fill="#fbf9f4" stroke="#000" stroke-opacity=".2"/>
+      <g id="gPanels"></g><g id="gBubbles"></g><g id="gOverlay"></g>
+    </svg>
+    <div id="banner" hidden></div>
+  </main>
+  <section id="tools"></section>
+  <section id="tray"></section>
+</div>
+<div id="ghost"></div>
+<div id="sheetWrap" hidden><div id="sheet"></div></div>
+<input type="file" id="file" accept="image/*" multiple hidden>
+<div id="toast"></div>
+
+<script>
+(() => {
+'use strict';
+const W = 1000, H = 1333, M = 28, G = 18;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Math.random().toString(36).slice(2, 10);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+/* ---------- icônes ---------- */
+const IC = {
+  bubble:'<path d="M4 11c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5-3.6 6.5-8 6.5c-1 0-2-.1-2.9-.4L5 19l1.2-3.3C4.8 14.5 4 12.9 4 11z"/>',
+  think:'<path d="M7 15a4 4 0 0 1-.5-8 5 5 0 0 1 9.4-1A4 4 0 0 1 18 14H7z"/><circle cx="7" cy="18.5" r="1.3"/><circle cx="4.6" cy="21" r=".8"/>',
+  burst:'<path d="M12 2l2 5 5-2-2 5 5 2-5 2 2 5-5-2-2 5-2-5-5 2 2-5-5-2 5-2-2-5 5 2z"/>',
+  box:'<rect x="3" y="7" width="18" height="10" rx="1"/><path d="M7 12h10"/>',
+  text:'<path d="M5 6h14M12 6v13M9 19h6"/>',
+  image:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
+  grid:'<rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 10h18M12 3v7M3 15h18M9 15v6"/>',
+  download:'<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
+  swap:'<path d="M4 8h14l-3-3M20 16H6l3 3"/>',
+  crop:'<path d="M6 2v16h16M2 6h16v16"/>',
+  trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
+  front:'<rect x="9" y="9" width="11" height="11" rx="1" fill="currentColor"/><path d="M4 15V4h11"/>',
+  check:'<path d="M5 12l5 5 9-10"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  minus:'<path d="M5 12h14"/>',
+  undo:'<path d="M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"/>',
+  redo:'<path d="M15 14l5-5-5-5M20 9H10a6 6 0 0 0 0 12h3"/>',
+  dots:'<circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/>',
+  tail:'<path d="M4 9c0-3 3.6-5 8-5s8 2 8 5-3.6 5-8 5H9l-5 6 2-7C4.7 12 4 10.6 4 9z"/>',
+  close:'<path d="M6 6l12 12M18 6L6 18"/>',
+  page:'<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 8h6M9 12h6"/>'
+};
+const ic = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
+$('#undo').innerHTML = ic('undo'); $('#redo').innerHTML = ic('redo');
+
+/* ---------- mises en page ---------- */
+const LAYOUTS = {
+  exemple:{name:'2 · 1 · 2', rows:[[1,[1,1]],[1,[1]],[1,[1,1]]]},
+  pleine:{name:'Pleine page', rows:[[1,[1]]]},
+  deux:{name:'2 bandes', rows:[[1,[1]],[1,[1]]]},
+  trois:{name:'3 bandes', rows:[[1,[1]],[1,[1]],[1,[1]]]},
+  quatre:{name:'4 cases', rows:[[1,[1,1]],[1,[1,1]]]},
+  six:{name:'6 cases', rows:[[1,[1,1]],[1,[1,1]],[1,[1,1]]]},
+  neuf:{name:'9 cases', rows:[[1,[1,1,1]],[1,[1,1,1]],[1,[1,1,1]]]},
+  milieu:{name:'1 · 2 · 1', rows:[[1,[1]],[1,[1,1]],[1,[1]]]},
+  grand:{name:'Grande + 3', rows:[[2,[1]],[1,[1,1,1]]]},
+  dyn:{name:'Dynamique', rows:[[1,[2,1]],[1,[1,2]],[1,[1,1,1]]]},
+  hautbas:{name:'1 · 3', rows:[[1.3,[1]],[1,[1,1,1]]]},
+  cols:{name:'2 colonnes', rows:[[1,[1,1]]]}
+};
+function layoutRects(key){
+  const rows = (LAYOUTS[key] || LAYOUTS.exemple).rows;
+  const tot = rows.reduce((s, r) => s + r[0], 0);
+  const ah = H - 2*M - G*(rows.length - 1);
+  let y = M; const out = [];
+  rows.forEach(([rh, cols]) => {
+    const h = ah * rh / tot, tw = cols.reduce((a, b) => a + b, 0), aw = W - 2*M - G*(cols.length - 1);
+    let x = M;
+    cols.forEach(c => { const w = aw * c / tw; out.push({x, y, w, h}); x += w + G; });
+    y += h + G;
+  });
+  return out;
+}
+
+/* ---------- état ---------- */
+let S = null, cur = 0, sel = null, mode = null, crop = false;
+let undoStack = [], redoStack = [];
+const srcs = {};
+const emptyPanel = () => ({img:null, zoom:1, ox:0, oy:0});
+const newPage = (layout='exemple') => ({id:uid(), layout, panels:layoutRects(layout).map(emptyPanel), bubbles:[]});
+const newProject = () => ({v:1, title:'Ma BD', images:{}, pages:[newPage()], updated:0});
+const page = () => S.pages[cur];
+const findBubble = id => page().bubbles.find(b => b.id === id);
+const srcOf = id => { const im = S.images[id]; if (!im) return ''; return srcs[id] || (im.asset ? '/_blob/' + im.asset : (im.data || '')); };
+
+function fixup(){
+  if (!S || !Array.isArray(S.pages) || !S.pages.length) S = newProject();
+  S.images = S.images || {};
+  S.pages.forEach(p => {
+    p.id = p.id || uid(); p.layout = LAYOUTS[p.layout] ? p.layout : 'exemple';
+    p.bubbles = p.bubbles || []; p.panels = p.panels || [];
+    const n = layoutRects(p.layout).length;
+    while (p.panels.length < n) p.panels.push(emptyPanel());
+  });
+  cur = clamp(cur, 0, S.pages.length - 1);
+}
+
+/* ---------- historique ---------- */
+const snap = () => JSON.stringify({pages:S.pages, title:S.title});
+function commit(){ undoStack.push(snap()); if (undoStack.length > 80) undoStack.shift(); redoStack = []; updUndo(); }
+function restore(js){ const o = JSON.parse(js); S.pages = o.pages; S.title = o.title; fixup(); sel = null; mode = null; renderAll(); changed(); }
+function undo(){ if (!undoStack.length) return; redoStack.push(snap()); restore(undoStack.pop()); }
+function redo(){ if (!redoStack.length) return; undoStack.push(snap()); restore(redoStack.pop()); }
+function updUndo(){ $('#undo').disabled = !undoStack.length; $('#redo').disabled = !redoStack.length; }
+$('#undo').onclick = undo; $('#redo').onclick = redo;
+
+/* ---------- sauvegarde ---------- */
+let dbRef = null, assets = null, downloads = null, saveTimer = null, dbBusy = false, dbAgain = false;
+function setSave(t){ $('#saveState').textContent = t; }
+function changed(){ S.updated = Date.now(); clearTimeout(saveTimer); setSave('…'); saveTimer = setTimeout(() => { saveTimer = null; persist(); }, 600); }
+function idb(){ return new Promise((res, rej) => { try { const r = indexedDB.open('atelier-bd', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch(e){ rej(e); } }); }
+async function localPut(){ try { const d = await idb(); d.transaction('kv', 'readwrite').objectStore('kv').put(JSON.stringify(S), 'projet'); return true; } catch(e){ return false; } }
+async function localGet(){ try { const d = await idb(); return await new Promise(r => { const q = d.transaction('kv').objectStore('kv').get('projet'); q.onsuccess = () => { try { r(q.result ? JSON.parse(q.result) : null); } catch(e){ r(null); } }; q.onerror = () => r(null); }); } catch(e){ return null; } }
+function liteJSON(){
+  const images = {};
+  for (const [k, v] of Object.entries(S.images)) images[k] = v.asset ? {asset:v.asset, w:v.w, h:v.h} : {w:v.w, h:v.h, local:true};
+  return JSON.stringify({...S, images});
+}
+async function persist(){
+  const okLocal = await localPut();
+  if (dbRef) await dbSave(); else setSave(okLocal ? '✓ Sur cet appareil' : 'Non sauvegardé');
+}
+async function dbSave(){
+  if (!dbRef) return;
+  if (dbBusy){ dbAgain = true; return; }
+  dbBusy = true;
+  try {
+    const js = liteJSON();
+    if (js.length > 250000){ setSave('✓ Sur cet appareil'); }
+    else { await dbRef.set({json:js, updated:S.updated}); setSave('✓ Sauvegardé'); }
+  } catch(e){ setSave('✓ Sur cet appareil'); }
+  dbBusy = false;
+  if (dbAgain){ dbAgain = false; dbSave(); }
+}
+const withTimeout = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]);
+async function initCaps(){
+  const use = n => (window.claude && typeof window.claude.use === 'function') ? Promise.resolve(window.claude.use(n)).catch(() => null) : Promise.resolve(null);
+  try {
+    const [dbN, userN, asN, dlN] = await Promise.all(['db', 'user', 'assets', 'downloads'].map(use));
+    assets = asN; downloads = dlN;
+    if (dbN && userN){
+      const id = await userN.id().catch(() => null);
+      if (id){
+        dbRef = dbN.doc('data/users/' + id + '/projet');
+        const s = await withTimeout(dbRef.get(), 10000).catch(() => null);
+        if (s && s.exists){
+          let remote = null; try { remote = JSON.parse(s.data().json); } catch(e){}
+          if (remote && (remote.updated || 0) > (S.updated || 0)){
+            for (const [k, v] of Object.entries(remote.images || {})) if (!v.asset && S.images[k] && S.images[k].data) v.data = S.images[k].data;
+            S = remote; fixup(); undoStack = []; redoStack = []; renderAll(); localPut(); setSave('✓ Sauvegardé');
+          } else if ((S.updated || 0) > (remote ? remote.updated || 0 : 0)) dbSave();
+          else setSave('✓ Sauvegardé');
+        } else if (S.updated) dbSave();
+        else setSave('✓ Sauvegardé');
+      }
+    }
+    if (!dbRef && !$('#saveState').textContent) setSave('✓ Sur cet appareil');
+  } catch(e){}
+}
+
+/* ---------- géométrie des images ---------- */
+function imgGeom(r, p, im){
+  const base = Math.max(r.w / im.w, r.h / im.h) * (p.zoom || 1);
+  const dw = im.w * base, dh = im.h * base;
+  const mx = (dw - r.w) / 2, my = (dh - r.h) / 2;
+  const ox = clamp((p.ox || 0) * r.w, -mx, mx), oy = clamp((p.oy || 0) * r.h, -my, my);
+  return {x:r.x + (r.w - dw) / 2 + ox, y:r.y + (r.h - dh) / 2 + oy, w:dw, h:dh, mx, my};
+}
+
+/* ---------- formes des bulles ---------- */
+const f = n => Math.round(n * 10) / 10;
+const ellipseD = (cx, cy, rx, ry) => `M${f(cx-rx)},${f(cy)}a${f(rx)},${f(ry)} 0 1,0 ${f(2*rx)},0a${f(rx)},${f(ry)} 0 1,0 ${f(-2*rx)},0Z`;
+function cloudD(cx, cy, rx, ry){
+  const n = Math.max(9, Math.round((rx + ry) / 26)); let d = '';
+  const pts = [];
+  for (let i = 0; i < n; i++){ const a = i * 2 * Math.PI / n - Math.PI / 2; pts.push([cx + rx*0.9*Math.cos(a), cy + ry*0.86*Math.sin(a)]); }
+  d = `M${f(pts[0][0])},${f(pts[0][1])}`;
+  for (let i = 0; i < n; i++){
+    const a = pts[i], b = pts[(i + 1) % n], r = Math.hypot(b[0]-a[0], b[1]-a[1]) * 0.6;
+    d += `A${f(r)},${f(r)} 0 0,1 ${f(b[0])},${f(b[1])}`;
+  }
+  return d + 'Z';
+}
+function starD(cx, cy, rx, ry){
+  const n = 26; let d = '';
+  for (let i = 0; i < n; i++){
+    const a = i * 2 * Math.PI / n - Math.PI / 2;
+    const k = i % 2 ? 0.8 : 1.02 + ((i * 7) % 5) * 0.035;
+    d += (i ? 'L' : 'M') + f(cx + rx*k*Math.cos(a)) + ',' + f(cy + ry*k*Math.sin(a));
+  }
+  return d + 'Z';
+}
+const hasTail = b => b.tail !== false && (b.type === 'parole' || b.type === 'pensee' || b.type === 'cri');
+function shapes(b){
+  const cx = b.x, cy = b.y, rx = b.w / 2, ry = b.h / 2;
+  let body = '', tail = '';
+  const ap = Math.atan2((b.ty - cy) / ry, (b.tx - cx) / rx);
+  const tri = (k, s) => {
+    const p1 = [cx + rx*k*Math.cos(ap - s), cy + ry*k*Math.sin(ap - s)];
+    const p2 = [cx + rx*k*Math.cos(ap + s), cy + ry*k*Math.sin(ap + s)];
+    const m = [(p1[0] + b.tx) / 2, (p1[1] + b.ty) / 2], m2 = [(p2[0] + b.tx) / 2, (p2[1] + b.ty) / 2];
+    const bend = 0.12, vx = b.tx - cx, vy = b.ty - cy, nx = -vy * bend, ny = vx * bend;
+    return `M${f(p1[0])},${f(p1[1])}Q${f(m[0]+nx*0.3)},${f(m[1]+ny*0.3)} ${f(b.tx)},${f(b.ty)}Q${f(m2[0]+nx*0.6)},${f(m2[1]+ny*0.6)} ${f(p2[0])},${f(p2[1])}Z`;
+  };
+  if (b.type === 'parole'){ body = ellipseD(cx, cy, rx, ry); if (hasTail(b)) tail = tri(0.7, 0.26); }
+  else if (b.type === 'cri'){ body = starD(cx, cy, rx, ry); if (hasTail(b)) tail = tri(0.6, 0.22); }
+  else if (b.type === 'pensee'){
+    body = cloudD(cx, cy, rx, ry);
+    if (hasTail(b)){
+      const ex = cx + rx*1.02*Math.cos(ap), ey = cy + ry*1.02*Math.sin(ap), r0 = Math.min(rx, ry) * 0.17;
+      [[0.18, 1], [0.55, 0.68], [0.92, 0.42]].forEach(([t, k]) => { const r = Math.max(5, r0 * k); tail += ellipseD(ex + (b.tx - ex)*t, ey + (b.ty - ey)*t, r, r*0.85); });
+    }
+  }
+  else if (b.type === 'cartouche'){ body = `M${f(cx-rx)},${f(cy-ry)}h${f(2*rx)}v${f(2*ry)}h${f(-2*rx)}Z`; }
+  return {body, tail};
+}
+
+/* ---------- texte ---------- */
+const mctx = document.createElement('canvas').getContext('2d');
+function fontOf(b, size){ return b.type === 'cri' ? `${size}px Bangers, Impact, sans-serif` : `700 ${size}px "Comic Neue", "Comic Sans MS", sans-serif`; }
+function textBox(b){
+  const k = {parole:[0.74, 0.68], pensee:[0.68, 0.6], cri:[0.6, 0.54], cartouche:[0.9, 0.82], texte:[0.96, 0.92]}[b.type] || [0.8, 0.7];
+  return {w:b.w * k[0], h:b.h * k[1]};
+}
+function layoutText(b){
+  let txt = (b.text || '').trim(); if (!txt) return null;
+  if (b.caps) txt = txt.toUpperCase();
+  const box = textBox(b);
+  let size = b.size || 30, lines = [];
+  for (let it = 0; it < 40; it++){
+    mctx.font = fontOf(b, size);
+    lines = []; let maxw = 0;
+    for (const para of txt.split('\n')){
+      const words = para.split(/\s+/).filter(Boolean); let line = '';
+      if (!words.length){ lines.push(''); continue; }
+      for (const w of words){
+        const t = line ? line + ' ' + w : w;
+        if (mctx.measureText(t).width > box.w && line){ lines.push(line); line = w; } else line = t;
+      }
+      lines.push(line);
+    }
+    lines.forEach(l => maxw = Math.max(maxw, mctx.measureText(l).width));
+    if ((lines.length * size * 1.12 <= box.h && maxw <= box.w) || size <= 11) break;
+    size *= 0.93;
+  }
+  return {size, lines, lh:size * 1.12, font:fontOf(b, size)};
+}
+
+/* ---------- rendu ---------- */
+const svg = $('#page'), gP = $('#gPanels'), gB = $('#gBubbles'), gO = $('#gOverlay'), defs = $('#defs');
+function upx(){ const r = svg.getBoundingClientRect(); const s = Math.min(r.width / W, r.height / H) || 1; return 1 / s; }
+
+function renderPanels(){
+  const pg = page(), rects = layoutRects(pg.layout);
+  let d = '', o = '';
+  rects.forEach((r, i) => {
+    const p = pg.panels[i];
+    d += `<clipPath id="c${i}"><rect x="${f(r.x)}" y="${f(r.y)}" width="${f(r.w)}" height="${f(r.h)}"/></clipPath>`;
+    o += `<g data-p="${i}" clip-path="url(#c${i})"><rect x="${f(r.x)}" y="${f(r.y)}" width="${f(r.w)}" height="${f(r.h)}" fill="#ece7dc"/>`;
+    const im = p.img && S.images[p.img];
+    if (im && srcOf(p.img)){
+      const g = imgGeom(r, p, im);
+      o += `<image id="im${i}" href="${esc(srcOf(p.img))}" x="${f(g.x)}" y="${f(g.y)}" width="${f(g.w)}" height="${f(g.h)}" preserveAspectRatio="none"/>`;
+    } else {
+      const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+      o += `<g transform="translate(${f(cx-24)},${f(cy-48)}) scale(2)">${IC.image.replace(/<(rect|circle|path)/g, '<$1 class="phi"')}</g>`;
+      o += `<text class="ph" x="${f(cx)}" y="${f(cy + 26)}">${im ? 'Image indisponible ici' : 'Touchez pour ajouter'}</text>`;
+    }
+    o += `</g><rect class="pborder" x="${f(r.x)}" y="${f(r.y)}" width="${f(r.w)}" height="${f(r.h)}"/>`;
+  });
+  defs.innerHTML = d; gP.innerHTML = o;
+}
+function updatePanelImage(i){
+  const pg = page(), r = layoutRects(pg.layout)[i], p = pg.panels[i], el = document.getElementById('im' + i);
+  if (!el || !p.img) return;
+  const g = imgGeom(r, p, S.images[p.img]);
+  el.setAttribute('x', f(g.x)); el.setAttribute('y', f(g.y)); el.setAttribute('width', f(g.w)); el.setAttribute('height', f(g.h));
+}
+function bubbleSVG(b){
+  const fill = b.fill || '#ffffff';
+  let s = `<g class="bub" data-b="${b.id}">`;
+  if (b.type === 'texte'){
+    s += `<rect x="${f(b.x-b.w/2)}" y="${f(b.y-b.h/2)}" width="${f(b.w)}" height="${f(b.h)}" fill="transparent"/>`;
+  } else {
+    const {body, tail} = shapes(b);
+    const sw = b.type === 'cartouche' ? 4 : 4.5;
+    s += `<path d="${body}${tail}" fill="none" stroke="#111" stroke-width="${sw*2}" stroke-linejoin="round"/>`;
+    s += `<path d="${body}" fill="${fill}"/>`;
+    if (tail) s += `<path d="${tail}" fill="${fill}"/>`;
+  }
+  const L = layoutText(b);
+  if (L){
+    const y0 = b.y - (L.lines.length * L.lh) / 2 + L.lh / 2;
+    const fam = b.type === 'cri' ? 'Bangers, Impact, sans-serif' : '&quot;Comic Neue&quot;, &quot;Comic Sans MS&quot;, sans-serif';
+    s += `<text x="${f(b.x)}" text-anchor="middle" dominant-baseline="central" font-family="${fam}" font-weight="${b.type === 'cri' ? 400 : 700}" font-size="${f(L.size)}" fill="${b.color || '#111'}" style="pointer-events:none">`;
+    L.lines.forEach((l, i) => { s += `<tspan x="${f(b.x)}" y="${f(y0 + i*L.lh)}">${esc(l) || ' '}</tspan>`; });
+    s += '</text>';
+  }
+  return s + '</g>';
+}
+function renderBubbles(){ gB.innerHTML = page().bubbles.map(bubbleSVG).join(''); }
+function renderOverlay(){
+  const u = upx(); let o = '';
+  const pg = page(), rects = layoutRects(pg.layout);
+  const hl = (r, col, dash) => `<rect x="${f(r.x)}" y="${f(r.y)}" width="${f(r.w)}" height="${f(r.h)}" fill="none" stroke="${col}" stroke-width="${f(4*u)}" ${dash ? `stroke-dasharray="${f(10*u)} ${f(6*u)}"` : ''} pointer-events="none"/>`;
+  if (sel && sel.kind === 'panel' && rects[sel.i]) o += hl(rects[sel.i], '#ff5a36', false);
+  if (mode && mode.type === 'swap' && rects[mode.from]) o += hl(rects[mode.from], '#ff5a36', true);
+  if (dragHover != null && rects[dragHover]) o += `<rect x="${f(rects[dragHover].x)}" y="${f(rects[dragHover].y)}" width="${f(rects[dragHover].w)}" height="${f(rects[dragHover].h)}" fill="#ffcf3f" fill-opacity=".25" stroke="#ffcf3f" stroke-width="${f(5*u)}" pointer-events="none"/>`;
+  if (sel && sel.kind === 'bubble'){
+    const b = findBubble(sel.id);
+    if (b){
+      o += `<rect x="${f(b.x-b.w/2)}" y="${f(b.y-b.h/2)}" width="${f(b.w)}" height="${f(b.h)}" fill="none" stroke="#2b7bff" stroke-width="${f(2*u)}" stroke-dasharray="${f(6*u)} ${f(4*u)}" pointer-events="none"/>`;
+      const hs = 9 * u, hit = 22 * u;
+      const hx = b.x + b.w/2, hy = b.y + b.h/2;
+      o += `<g data-h="size" style="cursor:nwse-resize"><circle cx="${f(hx)}" cy="${f(hy)}" r="${f(hit)}" fill="transparent"/><rect x="${f(hx-hs)}" y="${f(hy-hs)}" width="${f(hs*2)}" height="${f(hs*2)}" rx="${f(3*u)}" fill="#fff" stroke="#2b7bff" stroke-width="${f(2.5*u)}"/></g>`;
+      if (hasTail(b)) o += `<g data-h="tail" style="cursor:move"><circle cx="${f(b.tx)}" cy="${f(b.ty)}" r="${f(hit)}" fill="transparent"/><circle cx="${f(b.tx)}" cy="${f(b.ty)}" r="${f(hs)}" fill="#ff5a36" stroke="#fff" stroke-width="${f(2.5*u)}"/></g>`;
+    }
+  }
+  gO.innerHTML = o;
+}
+function renderPages(){
+  let h = S.pages.map((p, i) => `<button class="chip ${i === cur ? 'on' : ''}" data-pg="${i}" aria-label="Planche ${i+1}">${i+1}</button>`).join('');
+  h += `<button class="chip add" id="addPage" title="Nouvelle planche">+ Planche</button><button class="chip" id="pageMenu" title="Options de la planche">${'⋯'}</button>`;
+  $('#pages').innerHTML = h;
+  const on = $('#pages .chip.on'); if (on) on.scrollIntoView({inline:'nearest', block:'nearest'});
+}
+function renderTray(){
+  const ids = Object.keys(S.images).reverse();
+  const used = new Set(); S.pages.forEach(p => p.panels.forEach(x => x.img && used.add(x.img)));
+  let h = `<div class="head"><span>Bibliothèque · ${ids.length} image${ids.length > 1 ? 's' : ''}</span><button id="importBtn">+ Importer des images</button></div><div class="thumbs">`;
+  if (!ids.length) h += `<div class="empty">Importez vos dessins : ils s'afficheront ici. Glissez-les ensuite dans les cases.</div>`;
+  ids.forEach(id => {
+    const src = srcOf(id);
+    h += `<div class="th ${used.has(id) ? 'used' : ''} ${mode && mode.type === 'place' && mode.img === id ? 'pick' : ''}" data-img="${id}" style="background-image:url('${esc(src)}')">${trayEdit ? `<button class="x" data-del="${id}">×</button>` : ''}</div>`;
+  });
+  if (ids.length) h += `<button class="tb" id="trayEdit" style="min-width:58px">${trayEdit ? 'Terminé' : 'Gérer'}</button>`;
+  $('#tray').innerHTML = h + '</div>';
+}
+let trayEdit = false;
+
+function btn(id, icon, label, cls=''){ return `<button class="tb ${cls}" id="${id}">${ic(icon)}<span>${label}</span></button>`; }
+function renderTools(){
+  const t = $('#tools');
+  if (sel && sel.kind === 'bubble'){
+    const b = findBubble(sel.id); if (!b){ sel = null; return renderTools(); }
+    const types = [['parole', 'Parole'], ['pensee', 'Pensée'], ['cri', 'Cri'], ['cartouche', 'Cartouche'], ['texte', 'Texte seul']];
+    t.innerHTML = `<textarea id="btext" rows="2" placeholder="Écrivez le dialogue… (vide = bulle vide)">${esc(b.text || '')}</textarea>
+      <div class="row"><div class="seg">${types.map(([k, l]) => `<button data-type="${k}" class="${b.type === k ? 'on' : ''}">${l}</button>`).join('')}</div></div>
+      <div class="row">
+        ${btn('fsMinus', 'minus', 'Texte −')}${btn('fsPlus', 'plus', 'Texte +')}
+        ${hasTailType(b) ? btn('tailT', 'tail', b.tail === false ? 'Sans queue' : 'Queue', b.tail === false ? '' : 'on') : ''}
+        <button class="tb ${b.caps ? 'on' : ''}" id="capsT"><b style="font-size:15px;line-height:20px">AA</b><span>Majuscules</span></button>
+        ${b.type !== 'texte' ? `<button class="tb" id="fillT"><span style="width:20px;height:20px;border-radius:50%;border:2px solid #fff;background:${b.fill || '#fff'}"></span><span>Fond</span></button>` : ''}
+        ${btn('dupB', 'copy', 'Dupliquer')}${btn('frontB', 'front', 'Devant')}${btn('delB', 'trash', 'Supprimer', 'danger')}${btn('doneB', 'check', 'OK', 'ok')}
+      </div>`;
+  } else if (sel && sel.kind === 'panel'){
+    const p = page().panels[sel.i]; const has = !!p.img;
+    t.innerHTML = `<div class="row">
+        ${btn('pImg', 'image', has ? 'Changer image' : 'Ajouter image')}
+        ${has ? btn('pSwap', 'swap', 'Échanger') : ''}
+        ${has ? btn('pCrop', 'crop', 'Recadrer', crop ? 'on' : '') : ''}
+        ${has && crop ? `<div class="zoomwrap">Zoom<input type="range" id="pZoom" min="1" max="3" step="0.01" value="${p.zoom || 1}"></div>` : ''}
+        ${btn('pBubble', 'bubble', 'Bulle ici')}
+        ${has ? btn('pClear', 'close', 'Vider', 'danger') : ''}
+        ${btn('doneP', 'check', 'OK', 'ok')}
+      </div><div class="hint">${crop && has ? 'Glissez l’image dans la case pour la recadrer.' : 'Astuce : faites glisser une image sur une autre case pour les échanger.'}</div>`;
+  } else {
+    t.innerHTML = `<div class="row">
+        ${btn('aParole', 'bubble', 'Bulle')}${btn('aPensee', 'think', 'Pensée')}${btn('aCri', 'burst', 'Cri')}${btn('aCart', 'box', 'Cartouche')}${btn('aTexte', 'text', 'Texte')}
+        ${btn('tLayout', 'grid', 'Mise en page')}${btn('tExport', 'download', 'Exporter')}
+      </div><div class="hint">Touchez une case pour y mettre une image · touchez une bulle pour l’écrire ou la déplacer.</div>`;
+  }
+}
+const hasTailType = b => b.type === 'parole' || b.type === 'pensee' || b.type === 'cri';
+function renderBanner(){
+  const bn = $('#banner');
+  if (mode){
+    bn.hidden = false;
+    bn.innerHTML = `<span>${mode.type === 'place' ? 'Touchez la case où placer l’image' : 'Touchez la case avec laquelle échanger'}</span><button id="cancelMode">Annuler</button>`;
+  } else bn.hidden = true;
+}
+function renderAll(){ renderPages(); renderPanels(); renderBubbles(); renderOverlay(); renderTools(); renderTray(); renderBanner(); $('#title').value = S.title || ''; updUndo(); }
+function select(s){ sel = s; if (!s || s.kind !== 'panel') crop = false; textCommitted = false; renderOverlay(); renderTools(); }
+function endMode(){ mode = null; renderBanner(); renderOverlay(); renderTray(); }
+
+/* ---------- actions ---------- */
+function placeImage(i, img){
+  commit(); const p = page().panels[i]; Object.assign(p, {img, zoom:1, ox:0, oy:0});
+  renderPanels(); renderTray(); select({kind:'panel', i}); changed();
+}
+function swapPanels(a, b){
+  if (a === b) return;
+  const P = page().panels, keys = ['img', 'zoom', 'ox', 'oy'];
+  const tmp = {}; keys.forEach(k => tmp[k] = P[a][k]);
+  keys.forEach(k => { P[a][k] = P[b][k]; P[b][k] = tmp[k]; });
+  renderPanels(); select({kind:'panel', i:b}); changed(); toast('Images échangées');
+}
+const DEF = {parole:[280, 170, 30], pensee:[300, 190, 28], cri:[300, 210, 44], cartouche:[420, 96, 26], texte:[320, 110, 30]};
+function addBubble(type){
+  commit();
+  let cx = W / 2, cy = H / 2;
+  if (sel && sel.kind === 'panel'){ const r = layoutRects(page().layout)[sel.i]; cx = r.x + r.w / 2; cy = r.y + r.h * 0.32; }
+  const [w, h, size] = DEF[type];
+  const off = [[0, 0], [-200, -140], [200, -140], [-200, 140], [200, 140]][page().bubbles.length % 5], sc = sel && sel.kind === 'panel' ? 0.35 : 1; cx = clamp(cx + off[0]*sc, w/2 + 10, W - w/2 - 10); cy = clamp(cy + off[1]*sc, h/2 + 10, H - h - 10);
+  const b = {id:uid(), type, x:cx, y:cy, w, h, tx:cx - w*0.15, ty:cy + h*0.95, text:'', size, caps:false, tail:true, fill:'#ffffff'};
+  if (type === 'cartouche'){ const r = sel && sel.kind === 'panel' ? layoutRects(page().layout)[sel.i] : null; if (r){ b.x = r.x + w/2 + 12; b.y = r.y + h/2 + 12; } }
+  page().bubbles.push(b); renderBubbles(); select({kind:'bubble', id:b.id}); changed();
+  setTimeout(() => { const ta = $('#btext'); if (ta) ta.focus(); }, 30);
+}
+let textCommitted = false;
+
+/* ---------- import d'images ---------- */
+let pickTarget = null;
+const fileInput = $('#file');
+function pickFor(i){ pickTarget = i; fileInput.value = ''; fileInput.click(); }
+fileInput.addEventListener('change', async () => {
+  const files = [...fileInput.files]; if (!files.length) return;
+  const target = pickTarget; pickTarget = null;
+  toast(files.length > 1 ? `Import de ${files.length} images…` : 'Import…', 1500);
+  const ids = [];
+  for (const file of files){
+    try { ids.push(await importOne(file)); } catch(e){ toast('Impossible de lire ' + file.name); }
+  }
+  if (!ids.length) return;
+  commit();
+  const pg = page();
+  if (target != null){
+    Object.assign(pg.panels[target], {img:ids[0], zoom:1, ox:0, oy:0});
+    ids.shift();
+  }
+  // remplit les cases vides restantes
+  pg.panels.slice(0, layoutRects(pg.layout).length).forEach(p => { if (!p.img && ids.length) Object.assign(p, {img:ids.shift(), zoom:1, ox:0, oy:0}); });
+  renderPanels(); renderTray(); renderOverlay(); renderTools(); changed();
+});
+async function importOne(file){
+  const url = URL.createObjectURL(file);
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+  const max = 2200, k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+  const w = Math.round(img.naturalWidth * k), h = Math.round(img.naturalHeight * k);
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  c.getContext('2d').drawImage(img, 0, 0, w, h); URL.revokeObjectURL(url);
+  const id = uid(), rec = {w, h};
+  if (assets){
+    try {
+      const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.9));
+      const up = await assets.upload(blob);
+      rec.asset = up.id; srcs[id] = up.url || ('/_blob/' + up.id);
+    } catch(e){}
+  }
+  if (!rec.asset) rec.data = c.toDataURL('image/jpeg', 0.86);
+  S.images[id] = rec;
+  return id;
+}
+
+/* ---------- interactions sur la planche ---------- */
+let drag = null, dragHover = null;
+const ghost = $('#ghost');
+function pt(e){ const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+function panelAt(cx, cy){
+  const r = svg.getBoundingClientRect(); if (cx < r.left || cx > r.right || cy < r.top || cy > r.bottom) return null;
+  const P = pt({clientX:cx, clientY:cy});
+  const rs = layoutRects(page().layout);
+  let best = null, bd = 30;
+  rs.forEach((q, i) => {
+    const dx = Math.max(q.x - P.x, 0, P.x - q.x - q.w), dy = Math.max(q.y - P.y, 0, P.y - q.y - q.h), d = Math.hypot(dx, dy);
+    if (d <= bd){ bd = d; best = i; }
+  });
+  return best;
+}
+function showGhost(src, e){ ghost.style.backgroundImage = `url('${src}')`; ghost.style.display = 'block'; moveGhost(e); }
+function moveGhost(e){ ghost.style.left = e.clientX + 'px'; ghost.style.top = e.clientY + 'px'; }
+function hideGhost(){ ghost.style.display = 'none'; dragHover = null; }
+
+svg.addEventListener('pointerdown', e => {
+  if (e.button > 0) return;
+  const t = e.target, P = pt(e);
+  const h = t.closest('[data-h]'), b = t.closest('[data-b]'), pn = t.closest('[data-p]');
+  const base = {start:P, cx0:e.clientX, cy0:e.clientY, moved:false};
+  if (mode){
+    const i = panelAt(e.clientX, e.clientY);
+    if (i != null){ if (mode.type === 'place') { const img = mode.img; mode = null; placeImage(i, img); } else { const from = mode.from; mode = null; commit(); swapPanels(from, i); } }
+    endMode(); return;
+  }
+  if (h && sel && sel.kind === 'bubble'){ const bb = findBubble(sel.id); drag = {...base, kind:h.dataset.h, b:bb, orig:{...bb}}; }
+  else if (b){
+    const id = b.dataset.b, was = sel && sel.kind === 'bubble' && sel.id === id;
+    if (!was) select({kind:'bubble', id});
+    const bb = findBubble(id); drag = {...base, kind:'move', b:bb, orig:{...bb}, was};
+  }
+  else if (pn){
+    const i = +pn.dataset.p, p = page().panels[i], was = sel && sel.kind === 'panel' && sel.i === i;
+    if (crop && was && p.img) drag = {...base, kind:'pan', i, orig:{ox:p.ox || 0, oy:p.oy || 0}};
+    else drag = {...base, kind:'panel', i, was};
+  }
+  else { select(null); return; }
+  try { svg.setPointerCapture(e.pointerId); } catch(_){}
+  e.preventDefault();
+});
+svg.addEventListener('pointermove', e => {
+  if (!drag) return;
+  if (!drag.moved){
+    if (Math.hypot(e.clientX - drag.cx0, e.clientY - drag.cy0) < 7) return;
+    drag.moved = true;
+    if (drag.kind === 'panel'){
+      const p = page().panels[drag.i];
+      if (!p.img){ drag.dead = true; return; }
+      showGhost(srcOf(p.img), e);
+    } else commit();
+  }
+  if (drag.dead) return;
+  const P = pt(e), dx = P.x - drag.start.x, dy = P.y - drag.start.y, b = drag.b, o = drag.orig;
+  switch (drag.kind){
+    case 'move': b.x = o.x + dx; b.y = o.y + dy; b.tx = o.tx + dx; b.ty = o.ty + dy; renderBubbles(); renderOverlay(); break;
+    case 'tail': b.tx = P.x; b.ty = P.y; renderBubbles(); renderOverlay(); break;
+    case 'size': b.w = Math.max(70, o.w + 2*dx); b.h = Math.max(44, o.h + 2*dy); renderBubbles(); renderOverlay(); break;
+    case 'pan': {
+      const pg = page(), r = layoutRects(pg.layout)[drag.i], p = pg.panels[drag.i], g = imgGeom(r, {...p, ox:0, oy:0}, S.images[p.img]);
+      p.ox = clamp(o.ox * r.w + dx, -g.mx, g.mx) / r.w; p.oy = clamp(o.oy * r.h + dy, -g.my, g.my) / r.h;
+      updatePanelImage(drag.i); break;
+    }
+    case 'panel': {
+      moveGhost(e); const hv = panelAt(e.clientX, e.clientY); const nh = hv !== drag.i ? hv : null;
+      if (nh !== dragHover){ dragHover = nh; renderOverlay(); } break;
+    }
+  }
+});
+function endDrag(e, cancel){
+  if (!drag) return;
+  const d = drag; drag = null;
+  if (d.kind === 'panel'){
+    if (d.moved && !d.dead){
+      const tgt = cancel ? null : panelAt(e.clientX, e.clientY); hideGhost();
+      if (tgt != null && tgt !== d.i){ commit(); swapPanels(d.i, tgt); } else renderOverlay();
+    } else if (!d.moved && !cancel){
+      const p = page().panels[d.i];
+      select({kind:'panel', i:d.i});
+      if (!p.img) pickFor(d.i);
+    }
+    return;
+  }
+  if (d.kind === 'move' && !d.moved && d.was && !cancel){ const ta = $('#btext'); if (ta) ta.focus(); }
+  if (d.moved){ changed(); if (d.kind === 'pan') renderPanels(); }
+}
+svg.addEventListener('pointerup', e => endDrag(e, false));
+svg.addEventListener('pointercancel', e => { endDrag(e, true); hideGhost(); renderOverlay(); });
+
+/* ---------- bibliothèque : glisser vers une case ---------- */
+let tdrag = null;
+$('#tray').addEventListener('pointerdown', e => {
+  const th = e.target.closest('.th'); if (!th || e.target.closest('.x')) return;
+  tdrag = {img:th.dataset.img, x0:e.clientX, y0:e.clientY, moved:false, id:e.pointerId};
+});
+window.addEventListener('pointermove', e => {
+  if (!tdrag || e.pointerId !== tdrag.id) return;
+  if (!tdrag.moved){ if (Math.hypot(e.clientX - tdrag.x0, e.clientY - tdrag.y0) < 8) return; tdrag.moved = true; showGhost(srcOf(tdrag.img), e); }
+  moveGhost(e); const hv = panelAt(e.clientX, e.clientY); if (hv !== dragHover){ dragHover = hv; renderOverlay(); }
+});
+window.addEventListener('pointerup', e => {
+  if (!tdrag || e.pointerId !== tdrag.id) return;
+  const d = tdrag; tdrag = null;
+  if (d.moved){ const i = panelAt(e.clientX, e.clientY); hideGhost(); renderOverlay(); if (i != null) placeImage(i, d.img); }
+  else if (!trayEdit){
+    if (sel && sel.kind === 'panel'){ placeImage(sel.i, d.img); }
+    else { mode = {type:'place', img:d.img}; renderBanner(); renderTray(); }
+  }
+});
+window.addEventListener('pointercancel', e => { if (tdrag && e.pointerId === tdrag.id){ tdrag = null; hideGhost(); renderOverlay(); } });
+
+/* ---------- clics des barres ---------- */
+document.addEventListener('click', async e => {
+  const el = e.target.closest('button'); if (!el) return;
+  const id = el.id;
+  if (el.dataset.pg != null){ cur = +el.dataset.pg; sel = null; mode = null; crop = false; renderAll(); return; }
+  if (el.dataset.type){ const b = findBubble(sel.id); if (b && b.type !== el.dataset.type){ commit(); b.type = el.dataset.type; const sz = DEF[b.type][2]; if (b.type === 'cri' || b.size === DEF.cri[2]) b.size = sz; renderBubbles(); renderOverlay(); renderTools(); changed(); } return; }
+  if (el.dataset.del){ removeImage(el.dataset.del); return; }
+  if (el.dataset.layout){ setLayout(el.dataset.layout); closeSheet(); return; }
+  if (el.dataset.act){ sheetAction(el.dataset.act); return; }
+  const b = sel && sel.kind === 'bubble' ? findBubble(sel.id) : null;
+  const bubbleEdit = fn => { if (!b) return; commit(); fn(b); renderBubbles(); renderOverlay(); renderTools(); changed(); };
+  switch (id){
+    case 'addPage': commit(); S.pages.splice(cur + 1, 0, newPage(page().layout)); cur++; sel = null; renderAll(); changed(); toast('Planche ' + (cur + 1) + ' ajoutée'); break;
+    case 'pageMenu': openPageMenu(); break;
+    case 'cancelMode': endMode(); break;
+    case 'importBtn': pickFor(sel && sel.kind === 'panel' ? sel.i : null); break;
+    case 'trayEdit': trayEdit = !trayEdit; renderTray(); break;
+    case 'aParole': addBubble('parole'); break;
+    case 'aPensee': addBubble('pensee'); break;
+    case 'aCri': addBubble('cri'); break;
+    case 'aCart': addBubble('cartouche'); break;
+    case 'aTexte': addBubble('texte'); break;
+    case 'tLayout': openLayouts(); break;
+    case 'tExport': openExport(); break;
+    case 'fsMinus': bubbleEdit(b => b.size = Math.max(12, (b.size || 30) - 3)); break;
+    case 'fsPlus': bubbleEdit(b => b.size = Math.min(90, (b.size || 30) + 3)); break;
+    case 'tailT': bubbleEdit(b => b.tail = b.tail === false); break;
+    case 'capsT': bubbleEdit(b => b.caps = !b.caps); break;
+    case 'fillT': bubbleEdit(b => { const cols = ['#ffffff', '#fff3b8', '#ffd9cf', '#d9ecff', '#111111']; const i = cols.indexOf(b.fill || '#ffffff'); b.fill = cols[(i + 1) % cols.length]; b.color = b.fill === '#111111' ? '#ffffff' : '#111'; }); break;
+    case 'dupB': if (b){ commit(); const c = {...b, id:uid(), x:b.x + 40, y:b.y + 40, tx:b.tx + 40, ty:b.ty + 40}; page().bubbles.push(c); renderBubbles(); select({kind:'bubble', id:c.id}); changed(); } break;
+    case 'frontB': if (b){ commit(); const L = page().bubbles; L.splice(L.indexOf(b), 1); L.push(b); renderBubbles(); renderOverlay(); changed(); toast('Bulle au premier plan'); } break;
+    case 'delB': if (b){ commit(); const L = page().bubbles; L.splice(L.indexOf(b), 1); renderBubbles(); select(null); changed(); } break;
+    case 'doneB': case 'doneP': select(null); break;
+    case 'pImg': pickFor(sel.i); break;
+    case 'pSwap': mode = {type:'swap', from:sel.i}; renderBanner(); renderOverlay(); break;
+    case 'pCrop': crop = !crop; renderTools(); break;
+    case 'pBubble': addBubble('parole'); break;
+    case 'pClear': { commit(); Object.assign(page().panels[sel.i], emptyPanel()); crop = false; renderPanels(); renderTray(); renderTools(); changed(); break; }
+  }
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'btext'){
+    const b = sel && findBubble(sel.id); if (!b) return;
+    if (!textCommitted){ commit(); textCommitted = true; }
+    b.text = e.target.value; renderBubbles(); changed();
+  } else if (e.target.id === 'pZoom'){
+    const p = page().panels[sel.i];
+    if (!zoomCommitted){ commit(); zoomCommitted = true; }
+    p.zoom = +e.target.value; updatePanelImage(sel.i); changed();
+  } else if (e.target.id === 'title'){ S.title = e.target.value; changed(); }
+});
+let zoomCommitted = false;
+document.addEventListener('change', e => { if (e.target.id === 'pZoom'){ zoomCommitted = false; renderPanels(); } });
+document.addEventListener('keydown', e => {
+  const inField = /^(INPUT|TEXTAREA)$/.test(document.activeElement && document.activeElement.tagName);
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !inField){ e.preventDefault(); e.shiftKey ? redo() : undo(); }
+  else if ((e.key === 'Delete' || e.key === 'Backspace') && !inField && sel && sel.kind === 'bubble'){ e.preventDefault(); $('#delB') && $('#delB').click(); }
+  else if (e.key === 'Escape'){ if (!$('#sheetWrap').hidden) closeSheet(); else if (mode) endMode(); else select(null); }
+});
+window.addEventListener('resize', renderOverlay);
+const flush = () => { if (saveTimer){ clearTimeout(saveTimer); saveTimer = null; persist(); } };
+window.addEventListener('pagehide', flush);
+document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
+
+function removeImage(id){
+  commit();
+  S.pages.forEach(p => p.panels.forEach(x => { if (x.img === id) Object.assign(x, emptyPanel()); }));
+  delete S.images[id];
+  renderPanels(); renderTray(); renderTools(); changed();
+}
+function setLayout(key){
+  const pg = page(); if (pg.layout === key) return;
+  commit();
+  const n = layoutRects(key).length, filled = pg.panels.filter(p => p.img);
+  pg.layout = key;
+  const lost = pg.panels.slice(n).filter(p => p.img).length;
+  while (pg.panels.length < n) pg.panels.push(emptyPanel());
+  if (pg.panels.length > n) pg.panels = pg.panels.slice(0, n);
+  sel = null; renderAll(); changed();
+  if (lost) toast(`${lost} image(s) retirée(s) de la planche — toujours dans la bibliothèque`, 3000);
+}
+
+/* ---------- feuilles (menus) ---------- */
+function openSheet(html){ $('#sheet').innerHTML = html; $('#sheetWrap').hidden = false; }
+function closeSheet(){ $('#sheetWrap').hidden = true; }
+$('#sheetWrap').addEventListener('click', e => { if (e.target.id === 'sheetWrap') closeSheet(); });
+function miniLayout(key){
+  const rs = layoutRects(key);
+  return `<svg viewBox="0 0 1000 1333"><rect width="1000" height="1333" fill="#fbf9f4"/>${rs.map(r => `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="#cfc8ba" stroke="#111" stroke-width="18"/>`).join('')}</svg>`;
+}
+function openLayouts(){
+  openSheet(`<h3>Mise en page de la planche ${cur + 1}</h3><div class="lgrid">${Object.entries(LAYOUTS).map(([k, l]) => `<button data-layout="${k}" class="${page().layout === k ? 'on' : ''}">${miniLayout(k)}<span>${l.name}</span></button>`).join('')}</div>
+  <p class="hint" style="margin-top:12px">Les images restent dans l’ordre des cases. Choisissez « Pleine page » pour importer une planche déjà dessinée et n’ajouter que les textes.</p>`);
+}
+let confirmDel = false;
+function openPageMenu(){
+  confirmDel = false;
+  openSheet(`<h3>Planche ${cur + 1} sur ${S.pages.length}</h3><div class="list">
+    <button data-act="layout">${ic('grid')}<span>Changer la mise en page</span></button>
+    <button data-act="dup">${ic('copy')}<span>Dupliquer la planche</span></button>
+    ${cur > 0 ? `<button data-act="left">${ic('undo')}<span>Déplacer avant</span></button>` : ''}
+    ${cur < S.pages.length - 1 ? `<button data-act="right">${ic('redo')}<span>Déplacer après</span></button>` : ''}
+    ${S.pages.length > 1 ? `<button data-act="del" class="danger">${ic('trash')}<span>Supprimer la planche</span></button>` : ''}
+  </div>`);
+}
+function sheetAction(a){
+  const P = S.pages;
+  if (a === 'layout'){ openLayouts(); return; }
+  if (a === 'dup'){ commit(); const c = JSON.parse(JSON.stringify(page())); c.id = uid(); c.bubbles.forEach(b => b.id = uid()); P.splice(cur + 1, 0, c); cur++; }
+  else if (a === 'left'){ commit(); [P[cur - 1], P[cur]] = [P[cur], P[cur - 1]]; cur--; }
+  else if (a === 'right'){ commit(); [P[cur + 1], P[cur]] = [P[cur], P[cur + 1]]; cur++; }
+  else if (a === 'del'){
+    if (!confirmDel){ confirmDel = true; const el = document.querySelector('[data-act="del"] span'); el.textContent = 'Toucher à nouveau pour confirmer'; return; }
+    commit(); P.splice(cur, 1); cur = Math.max(0, cur - 1);
+  }
+  else if (a.startsWith('ex-')){ doExport(a.slice(3)); return; }
+  closeSheet(); sel = null; renderAll(); changed();
+}
+const inClaude = () => !!(window.claude && typeof window.claude.use === 'function');
+async function saveFile(filename, blob){
+  if (downloads) return downloads.save({filename, data:blob});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+function openExport(){
+  if (!downloads && inClaude()){
+    openSheet(`<h3>Exporter</h3><p class="hint" style="font-size:13px">L’export n’est pas disponible dans cette vue. Ouvrez l’atelier depuis claude.ai (ou l’app Claude) pour télécharger vos planches en PNG ou votre BD en PDF.</p>`);
+    return;
+  }
+  openSheet(`<h3>Exporter</h3><div class="list">
+    <button data-act="ex-png">${ic('image')}<span>Planche ${cur + 1} en image PNG<small>Haute définition, pour partager</small></span></button>
+    <button data-act="ex-pdf-small">${ic('page')}<span>BD complète en PDF · petit format<small>${S.pages.length} planche(s), 15 × 20 cm — idéal pour l’impression comics</small></span></button>
+    <button data-act="ex-pdf-a4">${ic('page')}<span>BD complète en PDF · A4<small>Planches centrées avec marges</small></span></button>
+  </div>`);
+}
+
+/* ---------- export ---------- */
+const imgCache = {};
+function loadImg(src){
+  if (!imgCache[src]) imgCache[src] = new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+  return imgCache[src];
+}
+async function renderCanvas(pg, scale){
+  try { await document.fonts.ready; } catch(e){}
+  const c = document.createElement('canvas'); c.width = W * scale; c.height = Math.round(H * scale);
+  const x = c.getContext('2d'); x.scale(scale, scale);
+  x.fillStyle = '#ffffff'; x.fillRect(0, 0, W, H);
+  const rects = layoutRects(pg.layout);
+  for (let i = 0; i < rects.length; i++){
+    const r = rects[i], p = pg.panels[i];
+    x.save(); x.beginPath(); x.rect(r.x, r.y, r.w, r.h); x.clip();
+    x.fillStyle = '#ece7dc'; x.fillRect(r.x, r.y, r.w, r.h);
+    if (p.img && S.images[p.img]){ const im = await loadImg(srcOf(p.img)); if (im){ const g = imgGeom(r, p, S.images[p.img]); x.drawImage(im, g.x, g.y, g.w, g.h); } }
+    x.restore();
+    x.lineWidth = 5; x.strokeStyle = '#111'; x.strokeRect(r.x, r.y, r.w, r.h);
+  }
+  for (const b of pg.bubbles){
+    if (b.type !== 'texte'){
+      const {body, tail} = shapes(b);
+      x.lineJoin = 'round'; x.strokeStyle = '#111'; x.lineWidth = (b.type === 'cartouche' ? 4 : 4.5) * 2;
+      x.stroke(new Path2D(body + tail));
+      x.fillStyle = b.fill || '#fff'; x.fill(new Path2D(body)); if (tail) x.fill(new Path2D(tail));
+    }
+    const L = layoutText(b);
+    if (L){
+      x.font = L.font; x.fillStyle = b.color || '#111'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      const y0 = b.y - (L.lines.length * L.lh) / 2 + L.lh / 2;
+      L.lines.forEach((l, i) => x.fillText(l, b.x, y0 + i * L.lh));
+    }
+  }
+  return c;
+}
+const slug = () => (S.title || 'ma-bd').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'ma-bd';
+let jsPDFp = null;
+function loadJsPDF(){
+  if (!jsPDFp) jsPDFp = new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.onload = () => res(window.jspdf.jsPDF); s.onerror = rej; document.head.appendChild(s); });
+  return jsPDFp;
+}
+async function doExport(kind){
+  closeSheet();
+  try {
+    if (kind === 'png'){
+      toast('Préparation de l’image…', 1500);
+      const c = await renderCanvas(page(), 2.4);
+      const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+      await saveFile(`${slug()}-planche-${cur + 1}.png`, blob);
+      toast('Planche exportée');
+    } else {
+      toast('Création du PDF…', 2500);
+      const jsPDF = await loadJsPDF();
+      const small = kind === 'pdf-small';
+      const doc = new jsPDF({unit:'mm', format:small ? [150, 200] : 'a4', orientation:'portrait', compress:true});
+      for (let i = 0; i < S.pages.length; i++){
+        if (i) doc.addPage(small ? [150, 200] : 'a4', 'portrait');
+        const c = await renderCanvas(S.pages[i], small ? 2 : 2.4);
+        const jpg = c.toDataURL('image/jpeg', 0.92);
+        if (small) doc.addImage(jpg, 'JPEG', 0, 0, 150, 200);
+        else doc.addImage(jpg, 'JPEG', 7.5, 15.5, 195, 260);
+      }
+      await saveFile(`${slug()}${small ? '-petit-format' : '-a4'}.pdf`, doc.output('blob'));
+      toast('PDF exporté');
+    }
+  } catch(e){
+    const code = e && e.code;
+    if (code === 'declined') return;
+    toast(code === 'rate_limited' ? 'Un téléchargement est déjà en cours' : 'Export impossible pour le moment', 2600);
+  }
+}
+
+/* ---------- toast ---------- */
+let tt = null;
+function toast(msg, ms = 1800){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('on'), ms); }
+
+/* ---------- démarrage ---------- */
+(async () => {
+  S = await localGet(); fixup(); renderAll(); updUndo();
+  if (document.fonts){
+    Promise.all([document.fonts.load('700 30px "Comic Neue"'), document.fonts.load('30px Bangers')]).then(() => renderBubbles()).catch(() => {});
+  }
+  setSave(S.updated ? '✓ Sur cet appareil' : '');
+  initCaps();
+})();
+})();
+</script>
+</body>
+</html>
