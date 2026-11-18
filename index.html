@@ -61,6 +61,7 @@ input[type=range]{accent-color:var(--acc);width:130px}
 #sheet h3{margin:0 0 10px;font-size:15px}
 .list button{display:flex;width:100%;align-items:center;gap:12px;padding:12px;border-radius:10px;text-align:left;font-size:15px}
 .list button:hover{background:var(--panel)}
+.list svg{width:22px;height:22px;flex:none;color:var(--acc2)}
 .list button small{display:block;color:var(--mut);font-size:12px;margin-top:2px}
 .list button.danger{color:#ff8a78}
 .lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
@@ -83,6 +84,7 @@ input[type=range]{accent-color:var(--acc);width:130px}
     <div class="brand">BD</div>
     <input id="title" value="Ma BD" aria-label="Titre de la BD" autocomplete="off">
     <span id="saveState"></span>
+    <button class="ib" id="saveMenu" title="Sauvegarde" aria-label="Sauvegarde"></button>
     <button class="ib" id="undo" title="Annuler" aria-label="Annuler"></button>
     <button class="ib" id="redo" title="Rétablir" aria-label="Rétablir"></button>
   </header>
@@ -101,6 +103,7 @@ input[type=range]{accent-color:var(--acc);width:130px}
 <div id="ghost"></div>
 <div id="sheetWrap" hidden><div id="sheet"></div></div>
 <input type="file" id="file" accept="image/*" multiple hidden>
+<input type="file" id="fileProj" accept=".json,application/json" hidden>
 <div id="toast"></div>
 
 <script>
@@ -135,10 +138,12 @@ const IC = {
   dots:'<circle cx="5" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="19" cy="12" r="1.5" fill="currentColor"/>',
   tail:'<path d="M4 9c0-3 3.6-5 8-5s8 2 8 5-3.6 5-8 5H9l-5 6 2-7C4.7 12 4 10.6 4 9z"/>',
   close:'<path d="M6 6l12 12M18 6L6 18"/>',
+  save:'<path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h8V3M8 21v-7h8v7"/>',
+  folder:'<path d="M3 6h6l2 2h10v11H3z"/>',
   page:'<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 8h6M9 12h6"/>'
 };
 const ic = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[n]}</svg>`;
-$('#undo').innerHTML = ic('undo'); $('#redo').innerHTML = ic('redo');
+$('#saveMenu').innerHTML = ic('save'); $('#undo').innerHTML = ic('undo'); $('#redo').innerHTML = ic('redo');
 
 /* ---------- mises en page ---------- */
 const LAYOUTS = {
@@ -178,7 +183,7 @@ const newPage = (layout='exemple') => ({id:uid(), layout, panels:layoutRects(lay
 const newProject = () => ({v:1, title:'Ma BD', images:{}, pages:[newPage()], updated:0});
 const page = () => S.pages[cur];
 const findBubble = id => page().bubbles.find(b => b.id === id);
-const srcOf = id => { const im = S.images[id]; if (!im) return ''; return srcs[id] || (im.asset ? '/_blob/' + im.asset : (im.data || '')); };
+const srcOf = id => { const im = S.images[id]; if (!im) return ''; return srcs[id] || (im.asset ? '/_blob/' + im.asset : (im.data || im.file || '')); };
 
 function fixup(){
   if (!S || !Array.isArray(S.pages) || !S.pages.length) S = newProject();
@@ -677,6 +682,7 @@ document.addEventListener('click', async e => {
   switch (id){
     case 'addPage': commit(); S.pages.splice(cur + 1, 0, newPage(page().layout)); cur++; sel = null; renderAll(); changed(); toast('Planche ' + (cur + 1) + ' ajoutée'); break;
     case 'pageMenu': openPageMenu(); break;
+    case 'saveMenu': openSaveMenu(); break;
     case 'cancelMode': endMode(); break;
     case 'importBtn': pickFor(sel && sel.kind === 'panel' ? sel.i : null); break;
     case 'trayEdit': trayEdit = !trayEdit; renderTray(); break;
@@ -779,6 +785,8 @@ function sheetAction(a){
     commit(); P.splice(cur, 1); cur = Math.max(0, cur - 1);
   }
   else if (a.startsWith('ex-')){ doExport(a.slice(3)); return; }
+  else if (a === 'save-file'){ closeSheet(); saveProjectFile(); return; }
+  else if (a === 'open-file'){ closeSheet(); const fi = $('#fileProj'); fi.value = ''; fi.click(); return; }
   closeSheet(); sel = null; renderAll(); changed();
 }
 const inClaude = () => !!(window.claude && typeof window.claude.use === 'function');
@@ -871,6 +879,64 @@ async function doExport(kind){
     toast(code === 'rate_limited' ? 'Un téléchargement est déjà en cours' : 'Export impossible pour le moment', 2600);
   }
 }
+
+/* ---------- sauvegarde fichier ---------- */
+function openSaveMenu(){
+  const st0 = $('#saveState').textContent; const st = !st0 || st0 === '…' ? 'en cours…' : st0.replace('✓ ', '');
+  const nImg = Object.keys(S.images).length;
+  openSheet(`<h3>Sauvegarde</h3>
+  <p class="hint" style="font-size:12.5px;margin:0 0 8px">Sauvegarde automatique : <b style="color:var(--txt)">${esc(st)}</b>. Pour garder une copie sûre de ta BD, ou la continuer ailleurs, enregistre-la dans un fichier.</p>
+  <div class="list">
+    <button data-act="save-file">${ic('save')}<span>Enregistrer ma BD dans un fichier<small>${S.pages.length} planche(s), ${nImg} image(s), tous les textes — un seul fichier .json</small></span></button>
+    <button data-act="open-file">${ic('folder')}<span>Ouvrir une sauvegarde<small>Remplace la BD en cours (tu peux annuler avec ↶)</small></span></button>
+  </div>`);
+}
+const blobToDataURL = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); });
+async function imageDataURL(id){
+  const im = S.images[id]; if (!im) return null;
+  if (im.data) return im.data;
+  const src = srcOf(id); if (!src) return null;
+  try { const r = await fetch(src); if (r.ok) return await blobToDataURL(await r.blob()); } catch(e){}
+  try { const el = await loadImg(src); if (!el) return null; const c = document.createElement('canvas'); c.width = el.naturalWidth; c.height = el.naturalHeight; c.getContext('2d').drawImage(el, 0, 0); return c.toDataURL('image/jpeg', 0.9); } catch(e){ return null; }
+}
+async function saveProjectFile(){
+  try {
+    const ids = Object.keys(S.images), images = {}; let missing = 0;
+    for (let i = 0; i < ids.length; i++){
+      toast(`Préparation de la sauvegarde… ${i + 1}/${ids.length}`, 4000);
+      const d = await imageDataURL(ids[i]);
+      if (d) images[ids[i]] = {w:S.images[ids[i]].w, h:S.images[ids[i]].h, data:d}; else missing++;
+    }
+    const out = {format:'atelier-bd', v:1, title:S.title, savedAt:new Date().toISOString(), pages:S.pages, images};
+    const d = new Date(), stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    await saveFile(`${slug()}-sauvegarde-${stamp}.json`, new Blob([JSON.stringify(out)], {type:'application/json'}));
+    toast(missing ? `Sauvegarde enregistrée (${missing} image(s) introuvable(s))` : 'Sauvegarde enregistrée ✓', 2600);
+  } catch(e){
+    if (e && e.code === 'declined') return;
+    toast(e && e.code === 'rate_limited' ? 'Un téléchargement est déjà en cours' : 'Sauvegarde impossible pour le moment', 2600);
+  }
+}
+$('#fileProj').addEventListener('change', async e => {
+  const file = e.target.files[0]; if (!file) return;
+  let o = null;
+  try { o = JSON.parse(await file.text()); } catch(err){}
+  if (!o || !Array.isArray(o.pages) || !o.pages.length){ toast('Ce fichier n’est pas une sauvegarde Atelier BD', 2600); return; }
+  const ids = Object.keys(o.images || {});
+  for (let i = 0; i < ids.length; i++){
+    const id = ids[i], im = o.images[id]; if (!im) continue;
+    const rec = {w:im.w, h:im.h};
+    if (im.data && assets){
+      toast(`Import des images… ${i + 1}/${ids.length}`, 4000);
+      try { const blob = await (await fetch(im.data)).blob(); const up = await assets.upload(blob); rec.asset = up.id; srcs[id] = up.url || ('/_blob/' + up.id); } catch(err){}
+    }
+    if (!rec.asset){ if (im.data) rec.data = im.data; else if (im.asset) rec.asset = im.asset; else if (im.file) rec.file = im.file; }
+    S.images[id] = rec;
+  }
+  commit();
+  S.pages = o.pages; S.title = o.title || S.title; cur = 0; sel = null; mode = null; fixup();
+  renderAll(); changed();
+  toast(`BD ouverte : ${S.pages.length} planche(s) ✓`, 2600);
+});
 
 /* ---------- toast ---------- */
 let tt = null;

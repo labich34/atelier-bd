@@ -13,6 +13,7 @@ Un seul fichier (`index.html`), sans installation ni dépendance à compiler.
 - **Annuler / Rétablir** (Ctrl+Z / Ctrl+Maj+Z).
 - **Export** : planche en PNG, BD complète en PDF (petit format 15 × 20 cm ou A4).
 - **Sauvegarde automatique** dans le navigateur (IndexedDB).
+- **Sauvegarde fichier** (bouton disquette) : enregistre toute la BD (planches, textes, images) dans un fichier `.json`, et la rouvre sur n'importe quel appareil.
 
 ## Utilisation
 
